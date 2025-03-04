@@ -8,6 +8,7 @@ const { PrismaClient } = require("@prisma/client");
 const authRoutes = require("./routes/authRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
 const { init } = require("./websockets/socket");
+const errorHandler = require("./middleware/errorMiddleware");
 
 // Initialize Express and HTTP Server
 const app = express();
@@ -23,6 +24,9 @@ app.use(express.json());
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/transactions", transactionRoutes);
+
+// Middleware for handling errors
+app.use(errorHandler);
 
 // Initialize WebSockets
 init(server);

@@ -1,20 +1,21 @@
+const { StatusCodes } = require("http-status-codes");
+const asyncHandler = require("../utils/asyncHandler");
+const successHandler = require("../utils/successHandler");
 const { registerUser, loginUser } = require("../services/authService");
-const { errorHandler } = require("../utils/errorHandler");
 
-exports.register = async (req, res) => {
-  try {
-    const user = await registerUser(req.body);
-    res.status(201).json({ message: "User registered successfully", user });
-  } catch (error) {
-    errorHandler(res, error, 400);
-  }
-};
+// Register user
+exports.register = asyncHandler(async (req, res) => {
+  const user = await registerUser(req.body);
+  successHandler(
+    res,
+    "User registered successfully",
+    user,
+    StatusCodes.CREATED
+  );
+});
 
-exports.login = async (req, res) => {
-  try {
-    const data = await loginUser(req.body);
-    res.json(data);
-  } catch (error) {
-    errorHandler(res, error, 400);
-  }
-};
+// Login user
+exports.login = asyncHandler(async (req, res) => {
+  const data = await loginUser(req.body);
+  successHandler(res, "User logged in successfully", data, StatusCodes.OK);
+});

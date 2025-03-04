@@ -101,6 +101,8 @@ npx prisma generate
 npm run dev
 ```
 
+### POSTMAN DOC URL: https://documenter.getpostman.com/view/23652017/2sAYdkFoKB
+
 Your API should now be running on **`http://localhost:5000`**.
 
 ---
@@ -123,7 +125,7 @@ POST /api/auth/register
 {
   "name": "John Doe",
   "email": "johndoe@example.com",
-  "password": "password123"
+  "password": ""
 }
 ```
 
@@ -143,7 +145,7 @@ POST /api/auth/register
 POST /api/auth/login
 {
   "email": "johndoe@example.com",
-  "password": "password123"
+  "password": ""
 }
 ```
 
@@ -303,33 +305,18 @@ npm test
 
 ## 🤝 **Need Help?**
 
-📧 Email: `your-email@example.com`  
-🌍 GitHub: [Your Repository](https://github.com/your-repo)
+📧 Email: `samuelayo61@gmail.com`  
+🌍 GitHub: [Your Repository](https://github.com/XKolz/finance-collab-backend)
 
 🚀 **Happy coding!** 🔥🔥🔥
 
-mkdir finance-collab-backend && cd finance-collab-backend
+<!--  -->
 
+## We will get back to this soon...Thanks
+
+npm dep & others
 npm init -y
-
 npm install express dotenv cors jsonwebtoken bcryptjs socket.io prisma @prisma/client
-
+npm install http-status-codes
 npm install --save-dev nodemon jest supertest
-
-/finance-collab-backend
-├── src/
-│ ├── controllers/ # API logic
-│ ├── middleware/ # Auth middleware
-│ ├── models/ # Prisma models
-│ ├── routes/ # API routes
-│ ├── services/ # Business logic
-│ ├── websockets/ # WebSocket events
-│ ├── app.js # Express app setup
-│ ├── server.js # Server entry point
-├── prisma/
-│ ├── schema.prisma # Database schema
-├── .env # Environment variables
-├── package.json # Dependencies
-├── README.md # Documentation
-
 wscat -c "ws://localhost:5000/socket.io/?EIO=4&transport=websocket"

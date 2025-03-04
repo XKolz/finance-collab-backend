@@ -1,41 +1,45 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const asyncHandler = require("../utils/asyncHandler");
+const successHandler = require("../utils/successHandler");
+const { StatusCodes } = require("http-status-codes");
 const io = require("../websockets/socket");
+const {
+  createTransaction,
+  getTransactions,
+  updateTransaction,
+  deleteTransaction,
+} = require("../services/transactionService");
 
-exports.createTransaction = async (req, res) => {
+// Create a new transaction
+exports.createTransaction = asyncHandler(async (req, res) => {
   const { type, amount, category } = req.body;
-
   if (!type || !amount || !category) {
-    return res.status(400).json({ message: "All fields are required" });
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: "All fields are required" });
   }
 
-  try {
-    const transaction = await prisma.transaction.create({
-      data: { type, amount, category, userId: req.user.id },
-    });
+  const transaction = await createTransaction({
+    type,
+    amount,
+    category,
+    userId: req.user.id,
+  });
 
-    await prisma.notification.create({
-      data: {
-        userId: req.user.id,
-        message: `A new ${type} transaction of $${amount} was added.`,
-      },
-    });
+  io.emit("transactionUpdated", transaction);
+  io.emit("newNotification", {
+    message: `A new ${type} transaction was added.`,
+  });
 
-    io.emit("transactionUpdated", transaction);
-    io.emit("newNotification", {
-      message: `A new ${type} transaction was added.`,
-    });
+  successHandler(
+    res,
+    "Transaction created successfully",
+    transaction,
+    StatusCodes.CREATED
+  );
+});
 
-    res.status(201).json(transaction);
-  } catch (error) {
-    console.error("❌ Error creating transaction:", error); // Log full error
-    res
-      .status(400)
-      .json({ message: "Error creating transaction", error: error.message });
-  }
-};
-
-exports.getTransactions = async (req, res) => {
+// Get all transactions
+exports.getTransactions = asyncHandler(async (req, res) => {
   const {
     type,
     category,
@@ -44,68 +48,44 @@ exports.getTransactions = async (req, res) => {
     page = 1,
     limit = 10,
   } = req.query;
-  const skip = (page - 1) * limit;
 
-  try {
-    const transactions = await prisma.transaction.findMany({
-      where: {
-        userId: req.user.id,
-        ...(type && { type }),
-        ...(category && { category }),
-        ...(minAmount && { amount: { gte: parseFloat(minAmount) } }),
-        ...(maxAmount && { amount: { lte: parseFloat(maxAmount) } }),
-      },
-      skip: parseInt(skip),
-      take: parseInt(limit),
-      orderBy: { createdAt: "desc" },
-    });
+  const result = await getTransactions({
+    userId: req.user.id,
+    type,
+    category,
+    minAmount,
+    maxAmount,
+    page: parseInt(page),
+    limit: parseInt(limit),
+  });
 
-    // Get total transaction count (for pagination metadata)
-    const totalTransactions = await prisma.transaction.count({
-      where: {
-        userId: req.user.id,
-        ...(type && { type }),
-        ...(category && { category }),
-        ...(minAmount && { amount: { gte: parseFloat(minAmount) } }),
-        ...(maxAmount && { amount: { lte: parseFloat(maxAmount) } }),
-      },
-    });
+  successHandler(res, "Transactions retrieved successfully", {
+    transactions: result.transactions,
+    total: result.totalTransactions,
+    page: parseInt(page),
+    totalPages: Math.ceil(result.totalTransactions / limit),
+  });
+});
 
-    res.json({
-      transactions,
-      total: totalTransactions,
-      page: parseInt(page),
-      totalPages: Math.ceil(totalTransactions / limit),
-    });
-  } catch (error) {
-    res.status(400).json({ message: "Error fetching transactions" });
-  }
-};
-
-exports.updateTransaction = async (req, res) => {
+// Update a transaction
+exports.updateTransaction = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { type, amount, category } = req.body;
-  try {
-    const transaction = await prisma.transaction.update({
-      where: { id },
-      data: { type, amount, category },
-    });
 
-    io.emit("transactionUpdated", transaction);
-    res.json(transaction);
-  } catch (error) {
-    res.status(400).json({ message: "Error updating transaction" });
-  }
-};
+  const transaction = await updateTransaction({ id, type, amount, category });
 
-exports.deleteTransaction = async (req, res) => {
+  io.emit("transactionUpdated", transaction);
+
+  successHandler(res, "Transaction updated successfully", transaction);
+});
+
+// Delete a transaction
+exports.deleteTransaction = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  try {
-    await prisma.transaction.delete({ where: { id } });
 
-    io.emit("transactionDeleted", { id });
-    res.json({ message: "Transaction deleted" });
-  } catch (error) {
-    res.status(400).json({ message: "Error deleting transaction" });
-  }
-};
+  await deleteTransaction(id);
+
+  io.emit("transactionDeleted", { id });
+
+  successHandler(res, "Transaction deleted successfully", { id });
+});

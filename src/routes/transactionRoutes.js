@@ -8,6 +8,7 @@ const {
 } = require("../controllers/transactionController");
 
 const router = express.Router();
+
 router.post("/", authMiddleware, createTransaction);
 router.get("/", authMiddleware, getTransactions);
 router.patch("/:id", authMiddleware, updateTransaction);
